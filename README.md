@@ -23,7 +23,7 @@
 
 ![Budget Analysis Section](image.png)
 
-*Figure: Budget Analysis section of the tool output showing 5-category breakdown, quality risk assessment, and visual charts*
+*Figure: Budget Analysis section of the output showing 5-category breakdown, quality risk assessment, and visual charts*
 
 </div>
 
