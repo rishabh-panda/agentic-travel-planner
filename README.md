@@ -17,6 +17,18 @@
 
 ---
 
+## Tool Preview
+
+<div align="center">
+
+![Budget Analysis Section](image.png)
+
+*Figure: Budget Analysis section of the tool output showing 5-category breakdown, quality risk assessment, and visual charts*
+
+</div>
+
+---
+
 ## Overview
 
 The Agentic Travel Itinerary Planner is an enterprise-grade travel planning system that leverages multiple AI agents to generate personalized, comprehensive travel itineraries. Built on Groq's high-performance LLM API, the system delivers weather forecasts, budget breakdowns, and day-by-day activity plans in seconds.
