@@ -120,24 +120,42 @@ class LogisticsAgent:
             ])
             
             prompt = f"""
-            Create a detailed {days}-day itinerary for {destination}.
-            User interests: {interests}
+            You are a professional travel planner.
+            Create a well-structured, realistic, and engaging {days}-day travel itinerary for {destination}.
+
+            Traveler profile:
+            - Interests: {interests}
             
             Available attractions in {destination}:
             {attractions_text}
             
-            Return as a JSON list with exactly {days} days. Each day must have:
-            - day_number (integer)
-            - theme (string)
-            - morning_activity (string with format "Activity Name - Brief description of what you'll do")
-            - afternoon_activity (string with format "Activity Name - Brief description")
-            - evening_activity (string with format "Activity Name - Brief description")
-            - meals_suggestion (string)
-            
-            CRITICAL: For each activity, use EXACTLY this format: "Place Name - What makes it special"
-            Do NOT repeat the description after a second dash.
-            
-            Be specific and realistic for {destination}.
+            Instructions:
+            - Use ONLY the provided attractions where possible, prioritizing relevance to the user's interests.
+            - Distribute activities logically across {days} days (avoid clustering too many major attractions in one day).
+            - Ensure geographical and practical feasibility (group nearby places together when possible).
+            - Vary themes across days to create a balanced experience (culture, relaxation, exploration, food, etc.).
+            - Keep activities concise but descriptive.
+
+            Output format:
+            Return ONLY a valid JSON array with exactly {days} objects (no extra text, no explanations).
+
+            Each day object MUST include:
+            - "day_number": integer (starting from 1)
+            - "theme": short descriptive title for the day
+            - "morning_activity": "Place Name - What makes it special"
+            - "afternoon_activity": "Place Name - What makes it special"
+            - "evening_activity": "Place Name - What makes it special"
+            - "meals_suggestion": a short suggestion (local cuisine or dining area)
+
+            CRITICAL FORMATTING RULES:
+            - Each activity MUST strictly follow this format: "Place Name - What makes it special"
+            - Use ONLY one dash (" - ") per activity.
+            - Do NOT repeat or extend the description after the dash.
+            - Keep descriptions concise (one short phrase).
+            - Do NOT include markdown, code blocks, or explanations.
+            - Ensure the output is valid JSON and directly parsable.
+
+            Ensure the itinerary feels natural, diverse, and tailored specifically to {destination}.
             """
             
             response = self.llm.invoke([HumanMessage(content=prompt)])

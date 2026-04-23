@@ -12,7 +12,7 @@ def test_groq():
         print("ERROR: GROQ_API_KEY not found")
         return False
     
-    # Your verified working models from API
+    # Groq's verified working models from API
     working_models = [
         "llama-3.3-70b-versatile",
         "llama-3.1-8b-instant",

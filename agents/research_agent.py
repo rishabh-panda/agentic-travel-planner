@@ -181,13 +181,40 @@ class ResearchAgent:
         interests_str = ', '.join(interests)
         
         prompt = f"""
-        You are a travel expert. Given the destination "{destination}" and user interests: {interests_str}.
-        Here are some raw attraction suggestions: {json.dumps(raw_attractions)}.
-        
-        Refine and return a JSON list of objects, each with keys: "name", "description", "category", "estimated_hours", "price_level".
-        The category must be one of: {interests_str}.
-        The description should be a meaningful 1-2 sentence explanation.
-        Return ONLY valid JSON, no other text.
+        You are a professional travel curator. Refine and enhance a list of attractions for {destination} based on user interests.
+
+        Traveler interests:
+        {interests_str}
+
+        Raw attraction data:
+        {json.dumps(raw_attractions)}
+
+        Instructions:
+        - Clean, enrich, and standardize the attraction data.
+        - Ensure each attraction is relevant to the user's interests.
+        - Improve descriptions to be engaging, clear, and informative.
+        - Remove duplicates or redundant entries.
+        - Keep the list concise and high-quality (prioritize the best options).
+
+        Output format:
+        Return ONLY a valid JSON array of objects. Do NOT include any extra text or explanations.
+
+        Each object MUST contain:
+        - "name": string (clean and properly formatted attraction name)
+        - "description": 1–2 sentences describing what makes the place special and why it’s worth visiting
+        - "category": MUST be exactly one of the following: {interests_str}
+        - "estimated_hours": a realistic number (e.g., 1.5, 2, 3) representing average visit duration
+        - "price_level": one of ["free", "low", "medium", "high"]
+
+        CRITICAL RULES:
+        - Ensure all fields are present for every object.
+        - Do NOT invent unrealistic or fictional places.
+        - Keep descriptions concise (max 2 sentences).
+        - Use consistent formatting across all entries.
+        - Ensure the output is strictly valid JSON (parsable without modification).
+        - Do NOT include markdown, code blocks, or commentary.
+
+        The final result should feel curated, relevant, and tailored specifically for {destination}.
         """
         
         max_retries = 2
