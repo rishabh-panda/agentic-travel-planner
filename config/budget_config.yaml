@@ -1,9 +1,14 @@
+# config/budget_config.yaml
+
 llm_model: llama-3.3-70b-versatile
 base_currency: USD
 enable_hidden_cost_detection: true
 enable_price_prediction: true
 enable_quality_checks: true
 cache_duration_hours: 24
+
+weather:
+  forecast_days: 3
 
 api_endpoints:
   exchange_rate: https://api.exchangerate-api.com/v4/latest

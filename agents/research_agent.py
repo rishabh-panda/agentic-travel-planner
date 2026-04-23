@@ -7,14 +7,17 @@ from langchain_groq import ChatGroq
 from langchain_core.messages import HumanMessage
 from tools.search_tool import search_attractions
 from tools.weather_tool import get_weather_forecast
+from utils.helpers import load_config
+
 
 class ResearchAgent:
-    def __init__(self, temperature: float = 0.2):
+    def __init__(self, temperature: float = 0.2, config_path: str = "config/budget_config.yaml"):
         self.llm = ChatGroq(
             model="llama-3.3-70b-versatile",
             temperature=temperature,
             api_key=os.getenv("GROQ_API_KEY")
         )
+        self.config = load_config(config_path)  # ADD THIS LINE
         self._debug_printed = False
 
     def research(self, destination: str, interests: str, days: int) -> Dict[str, Any]:
@@ -33,7 +36,19 @@ class ResearchAgent:
 
     def get_destination_info(self, destination: str, interests: List[str]) -> Dict[str, Any]:
         """Get weather and attractions for destination."""
-        weather = get_weather_forecast(destination, days=3)
+        # Get forecast days from config, default to 3, ensure it's an integer
+        forecast_days_config = self.config.get("weather", {}).get("forecast_days", 3)
+        
+        # Ensure forecast_days is an integer (not a list)
+        if isinstance(forecast_days_config, list):
+            forecast_days = forecast_days_config[0] if forecast_days_config else 3
+        else:
+            forecast_days = int(forecast_days_config) if forecast_days_config else 3
+        
+        # Cap at 7 days (API limit) and at least 1 day
+        forecast_days = max(1, min(forecast_days, 7))
+        
+        weather = get_weather_forecast(destination, days=forecast_days)
         attractions = self._get_attractions(destination, interests)
         return {
             "destination": destination,
