@@ -36,6 +36,21 @@ import traceback
 # Import agents after environment is configured
 from agents.orchestrator import Orchestrator
 
+# Import UI components
+from components.export import export_to_txt, export_to_markdown, export_to_pdf
+from components.export import create_export_filename, is_pdf_available
+from components.sharing import copy_to_clipboard, create_email_share_link
+from components.sharing import generate_shareable_link, show_share_options
+from utils.caching import load_from_cache, save_to_cache, generate_cache_key
+from components.export_buttons import create_export_section, is_export_enabled
+
+# Import error handling components
+from components.api_key_error import APIKeyErrorBanner
+from components.generation_error import GenerationErrorBox
+from components.budget_recommendations import BudgetRecommendations
+from components.weather_fallback import WeatherFallback
+from components.session_handling import SessionHandler
+
 # Page configuration
 st.set_page_config(
     page_title="Agentic Travel Itinerary Planner",
@@ -49,9 +64,68 @@ def load_custom_css() -> str:
     """Returns custom CSS for professional UI styling."""
     return """
     <style>
+        /* Import external CSS files */
+        @import url('styles/theme.css');
+        @import url('styles/responsive.css');
+        @import url('styles/accessibility.css');
+        
         /* Main container styling */
         .main {
             padding: 0rem 1rem;
+        }
+        
+        /* Skip Links */
+        .skip-links {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+        
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1E3A5F;
+            color: white;
+            padding: 0.5rem 1rem;
+            z-index: 100;
+            text-decoration: none;
+            font-weight: 600;
+            border-radius: 8px;
+            transition: top 0.2s ease;
+        }
+        
+        .skip-link:focus {
+            top: 0;
+            outline: 2px solid #1E3A5F;
+            outline-offset: 2px;
+        }
+        
+        /* Screen Reader Only Text */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+        
+        /* Focus Indicators */
+        :focus {
+            outline: 2px solid #1E3A5F;
+            outline-offset: 2px;
+        }
+        
+        :focus-visible {
+            outline: 2px solid #1E3A5F;
+            outline-offset: 2px;
         }
         
         /* Card styling */
@@ -62,6 +136,11 @@ def load_custom_css() -> str:
             padding: 1.5rem;
             margin-bottom: 1rem;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            transition: all 0.2s ease;
+        }
+        
+        .stCard:hover {
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         
         /* Header styling */
@@ -110,6 +189,12 @@ def load_custom_css() -> str:
         .stTextInput input, .stNumberInput input, .stSelectbox select {
             border-radius: 8px;
             border: 1px solid #D1D5DB;
+            transition: all 0.2s ease;
+        }
+        
+        .stTextInput input:focus, .stNumberInput input:focus, .stSelectbox select:focus {
+            outline: 2px solid #1E3A5F;
+            outline-offset: 2px;
         }
         
         /* Tab styling */
@@ -125,6 +210,7 @@ def load_custom_css() -> str:
             padding: 0.5rem 1rem;
             font-weight: 500;
             color: #6B7280;
+            transition: all 0.2s ease;
         }
         
         .stTabs [aria-selected="true"] {
@@ -140,6 +226,11 @@ def load_custom_css() -> str:
             padding: 1rem;
             text-align: center;
             border: 1px solid #E5E7EB;
+            transition: all 0.2s ease;
+        }
+        
+        .metric-card:hover {
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         
         .metric-value {
@@ -211,6 +302,31 @@ def load_custom_css() -> str:
             }
             .metric-value {
                 font-size: 1.25rem;
+            }
+        }
+        
+        /* High Contrast Mode Support */
+        @media (prefers-contrast: more) {
+            :focus,
+            :focus-visible {
+                outline: 3px solid #000000;
+                outline-offset: 2px;
+            }
+            
+            .stCard,
+            .metric-card {
+                border: 1px solid #000000;
+            }
+        }
+        
+        /* Reduced Motion Support */
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
             }
         }
     </style>
@@ -310,11 +426,32 @@ def initialize_session_state() -> None:
         "loading": False,
         "research": None,
         "budget": None,
-        "logistics": None
+        "logistics": None,
+        "api_key_error": None,
+        "generation_error": None,
+        "session_handler": None
     }
     for key, value in defaults.items():
         if key not in st.session_state:
             st.session_state[key] = value
+
+
+def initialize_error_handlers() -> None:
+    """Initialize error handling components."""
+    if st.session_state.get("api_key_error") is None:
+        st.session_state.api_key_error = APIKeyErrorBanner()
+    
+    if st.session_state.get("generation_error") is None:
+        st.session_state.generation_error = GenerationErrorBox()
+    
+    if st.session_state.get("budget_recommendations") is None:
+        st.session_state.budget_recommendations = BudgetRecommendations()
+    
+    if st.session_state.get("weather_fallback") is None:
+        st.session_state.weather_fallback = WeatherFallback()
+    
+    if st.session_state.get("session_handler") is None:
+        st.session_state.session_handler = SessionHandler()
 
 
 def check_api_key_status() -> bool:
@@ -342,8 +479,20 @@ def main() -> None:
     # Load custom CSS
     st.markdown(load_custom_css(), unsafe_allow_html=True)
     
+    # Skip Links
+    st.markdown("""
+    <div class="skip-links">
+        <a href="#main-content" class="skip-link">Skip to main content</a>
+        <a href="#navigation" class="skip-link">Skip to navigation</a>
+        <a href="#results" class="skip-link">Skip to results</a>
+    </div>
+    """, unsafe_allow_html=True)
+    
     # Initialize session state
     initialize_session_state()
+    
+    # Initialize error handlers
+    initialize_error_handlers()
     
     # Render sidebar
     render_sidebar_info()
@@ -351,12 +500,19 @@ def main() -> None:
     # Check API key status
     api_valid = check_api_key_status()
     
+    # Display API key error banner if needed
+    api_key_error = st.session_state.api_key_error
+    if api_key_error:
+        error_info = api_key_error.check_api_key_status()
+        if error_info.get("has_error"):
+            st.markdown(api_key_error.get_error_html(error_info), unsafe_allow_html=True)
+    
     # Main header
     st.markdown("""
-    <div class="main-header">
+    <header class="main-header" role="banner">
         <h1>Agentic Travel Itinerary Planner</h1>
         <p>AI-powered personalized travel planning using Groq Llama 3.3 70B</p>
-    </div>
+    </header>
     """, unsafe_allow_html=True)
     
     # Two-column layout for input
@@ -369,7 +525,8 @@ def main() -> None:
             destination = st.text_input(
                 "Destination",
                 placeholder="e.g., Delhi, Copenhagen, Tokyo",
-                help="Enter any city or region worldwide"
+                help="Enter any city or region worldwide",
+                key="destination_input"
             )
             
             col_days, col_budget = st.columns(2)
@@ -380,7 +537,8 @@ def main() -> None:
                     max_value=14,
                     value=3,
                     step=1,
-                    help="Trip duration in days (1-14)"
+                    help="Trip duration in days (1-14)",
+                    key="days_input"
                 )
             with col_budget:
                 budget = st.number_input(
@@ -388,24 +546,41 @@ def main() -> None:
                     min_value=1.0,
                     value=35000.0,
                     step=1000.0,
-                    help="Your total trip budget"
+                    help="Your total trip budget",
+                    key="budget_input"
                 )
             
             currency = st.selectbox(
                 "Currency",
                 options=["INR", "USD", "EUR", "GBP", "JPY", "CAD", "AUD", "SGD"],
                 index=0,
-                help="Select your preferred currency"
+                help="Select your preferred currency",
+                key="currency_select"
             )
             
             interests = st.text_area(
                 "Interests",
                 placeholder="e.g., Culture, Food, Adventure, History, Shopping",
                 help="Comma-separated list of your interests",
-                height=100
+                height=100,
+                key="interests_input"
             )
             
             st.markdown("")
+            
+            # Export button state management
+            export_enabled = is_export_enabled(
+                st.session_state.itinerary if hasattr(st.session_state, 'itinerary') else None,
+                destination
+            )
+            
+            # Display export button state
+            if not export_enabled and destination:
+                st.markdown("""
+                <div class="info-box" role="status" aria-live="polite">
+                    <strong>Export Available:</strong> Generate a travel plan to enable export functionality
+                </div>
+                """, unsafe_allow_html=True)
             
             # Generate button with loading state
             generate_disabled = st.session_state.loading or not api_valid or not destination
@@ -413,7 +588,8 @@ def main() -> None:
                 "Generate Travel Plan",
                 type="primary",
                 width='stretch',
-                disabled=generate_disabled
+                disabled=generate_disabled,
+                key="generate_button"
             )
     
     with col_right:
@@ -422,7 +598,7 @@ def main() -> None:
         # Placeholder for destination preview
         if destination:
             st.markdown(f"""
-            <div class="metric-card">
+            <div class="metric-card" role="region" aria-label="Destination preview card">
                 <div class="metric-value">{destination}</div>
                 <div class="metric-label">{days} day{'s' if days > 1 else ''} trip</div>
             </div>
@@ -443,19 +619,19 @@ def main() -> None:
                 
                 if is_low:
                     st.markdown("""
-                    <div class="warning-box">
+                    <div class="warning-box" role="alert" aria-live="polite">
                         <strong>Budget Advisory:</strong> Your daily budget appears low for this destination. Consider increasing or choosing a more affordable destination.
                     </div>
                     """, unsafe_allow_html=True)
                 elif is_high:
                     st.markdown("""
-                    <div class="info-box">
+                    <div class="info-box" role="status" aria-live="polite">
                         <strong>Budget is Healthy:</strong> Your budget should provide a comfortable experience.
                     </div>
                     """, unsafe_allow_html=True)
         else:
             st.markdown("""
-            <div class="info-box">
+            <div class="info-box" role="status" aria-live="polite">
                 Enter a destination to see preview information.
             </div>
             """, unsafe_allow_html=True)
@@ -466,9 +642,27 @@ def main() -> None:
             st.error("Please enter a destination.")
             return
         
-        st.session_state.loading = True
-        st.session_state.generated = False
-        st.session_state.error = None
+        # Check for cached results first
+        cache_key = generate_cache_key(destination, days, budget, currency, interests)
+        cached_results = load_from_cache(destination, days, budget, currency, interests)
+        
+        if cached_results and cached_results.get("success"):
+            # Use cached results
+            st.session_state.itinerary = cached_results.get("final_itinerary", "")
+            st.session_state.research = cached_results.get("research", {})
+            st.session_state.budget = cached_results.get("budget", {})
+            st.session_state.logistics = cached_results.get("logistics", {})
+            st.session_state.generated = True
+            st.session_state.error = None
+            st.info("Loaded results from cache (24-hour cache)")
+            
+            # Auto scroll to results using JavaScript
+            st.markdown('<script>window.scrollTo(0, document.body.scrollHeight);</script>', unsafe_allow_html=True)
+        else:
+            # Generate new results
+            st.session_state.loading = True
+            st.session_state.generated = False
+            st.session_state.error = None
         
         try:
             with st.spinner("Planning your trip... This may take 15-30 seconds."):
@@ -488,6 +682,17 @@ def main() -> None:
                 st.session_state.logistics = result.get("logistics", {})
                 st.session_state.generated = True
                 st.session_state.error = None
+                
+                # Cache results for 24 hours
+                cache_key = generate_cache_key(destination, days, budget, currency, interests)
+                save_to_cache(
+                    destination=destination,
+                    days=days,
+                    budget=budget,
+                    currency=currency,
+                    interests=interests,
+                    results=result
+                )
                 
                 # Auto scroll to results using JavaScript
                 st.markdown('<script>window.scrollTo(0, document.body.scrollHeight);</script>', unsafe_allow_html=True)
@@ -516,17 +721,17 @@ def main() -> None:
         with tab1:
             st.markdown(st.session_state.itinerary)
             
-            # Export options
-            col_export1, col_export2, col_export3 = st.columns(3)
-            with col_export1:
-                safe_dest = "".join(c for c in destination if c.isalnum() or c in (' ', '-')).strip().replace(' ', '_')
-                st.download_button(
-                    label="Download as Text",
-                    data=st.session_state.itinerary,
-                    file_name=f"itinerary_{safe_dest}.txt",
-                    mime="text/plain",
-                    width='stretch'
-                )
+            # Export options using new component
+            st.markdown("")
+            create_export_section(
+                st.session_state.itinerary,
+                destination,
+                days,
+                budget,
+                currency,
+                st.session_state.budget,
+                st.session_state.research.get("weather", {})
+            )
         
         with tab2:
             budget_info = st.session_state.budget
@@ -538,21 +743,21 @@ def main() -> None:
                 col_m1, col_m2, col_m3, col_m4 = st.columns(4)
                 with col_m1:
                     st.markdown(f"""
-                    <div class="metric-card">
+                    <div class="metric-card" role="region" aria-label="Total budget metric">
                         <div class="metric-value">{currency_code} {budget_info.get('total_budget', 0):,.0f}</div>
                         <div class="metric-label">Total Budget</div>
                     </div>
                     """, unsafe_allow_html=True)
                 with col_m2:
                     st.markdown(f"""
-                    <div class="metric-card">
+                    <div class="metric-card" role="region" aria-label="Daily budget metric">
                         <div class="metric-value">{currency_code} {budget_info.get('daily_budget', 0):,.0f}</div>
                         <div class="metric-label">Daily Budget</div>
                     </div>
                     """, unsafe_allow_html=True)
                 with col_m3:
                     st.markdown(f"""
-                    <div class="metric-card">
+                    <div class="metric-card" role="region" aria-label="Number of days metric">
                         <div class="metric-value">{budget_info.get('days', 0)}</div>
                         <div class="metric-label">Days</div>
                     </div>
@@ -561,7 +766,7 @@ def main() -> None:
                     risk = budget_info.get("quality_warning", {}).get("risk_level", "Unknown")
                     risk_color = "#10B981" if risk == "low" else "#F59E0B" if risk == "medium" else "#EF4444"
                     st.markdown(f"""
-                    <div class="metric-card">
+                    <div class="metric-card" role="region" aria-label="Budget risk level metric">
                         <div class="metric-value" style="color: {risk_color};">{risk.upper()}</div>
                         <div class="metric-label">Budget Risk Level</div>
                     </div>
@@ -591,11 +796,32 @@ def main() -> None:
                 if quality.get("message"):
                     msg_type = "warning-box" if quality.get("risk_level") in ["high", "critical"] else "info-box"
                     st.markdown(f"""
-                    <div class="{msg_type}">
+                    <div class="{msg_type}" role="alert" aria-live="polite">
                         <strong>Budget Assessment:</strong> {quality.get('message')}<br>
                         <strong>Recommendation:</strong> {quality.get('suggested_action', '')}
                     </div>
                     """, unsafe_allow_html=True)
+                
+                # Budget recommendations
+                budget_recommendations = st.session_state.budget_recommendations
+                if budget_recommendations:
+                    daily_budget = budget_info.get('daily_budget', budget)
+                    recommendations = budget_recommendations.get_recommendations(
+                        daily_budget=daily_budget,
+                        currency=currency_code,
+                        days=budget_info.get('days', days)
+                    )
+                    
+                    if recommendations.get("has_recommendations"):
+                        # Display critical alert if needed
+                        alert = recommendations.get("alert")
+                        if alert and alert.get("should_animate"):
+                            st.markdown(budget_recommendations.get_critical_alert_html(alert), unsafe_allow_html=True)
+                        elif alert:
+                            st.markdown(budget_recommendations.get_warning_alert_html(alert), unsafe_allow_html=True)
+                        
+                        # Display recommendations
+                        st.markdown(budget_recommendations.get_recommendations_html(recommendations.get("recommendations", [])), unsafe_allow_html=True)
         
         with tab3:
             weather_info = st.session_state.research.get("weather", {})
@@ -604,7 +830,17 @@ def main() -> None:
                 weather_df = create_weather_table(forecast)
                 st.dataframe(weather_df, width='stretch', hide_index=True)
             else:
-                st.info("Weather data not available for this destination.")
+                # Use weather fallback component
+                weather_fallback = st.session_state.weather_fallback
+                if weather_fallback:
+                    estimated_weather = weather_fallback.estimate_weather(
+                        destination=destination,
+                        season="spring",
+                        days=days
+                    )
+                    st.markdown(weather_fallback.get_fallback_html(estimated_weather), unsafe_allow_html=True)
+                else:
+                    st.info("Weather data not available for this destination.")
         
         with tab4:
             st.markdown("#### Recommended Tips")
@@ -634,18 +870,28 @@ def main() -> None:
             """)
     
     elif st.session_state.error:
-        st.markdown(f"""
-        <div class="error-box">
-            <strong>Error:</strong> {st.session_state.error}<br><br>
-            Please check your inputs and try again. If the problem persists, verify your API keys and internet connection.
-        </div>
-        """, unsafe_allow_html=True)
+        # Use generation error component for better error display
+        generation_error = st.session_state.generation_error
+        if generation_error:
+            error_info = generation_error.create_error_box(
+                error_message=st.session_state.error,
+                error_type="unknown_error"
+            )
+            st.markdown(generation_error.get_error_html(error_info), unsafe_allow_html=True)
+        else:
+            # Fallback to basic error display
+            st.markdown(f"""
+            <div class="error-box" role="alert" aria-live="assertive">
+                <strong>Error:</strong> {st.session_state.error}<br><br>
+                Please check your inputs and try again. If the problem persists, verify your API keys and internet connection.
+            </div>
+            """, unsafe_allow_html=True)
     
     # Footer
     st.markdown("""
-    <div class="footer">
+    <footer class="footer" role="contentinfo">
         Powered by Groq Llama 3.3 70B | Weather: Open-Meteo | Currency: Frankfurter API
-    </div>
+    </footer>
     """, unsafe_allow_html=True)
 
 
