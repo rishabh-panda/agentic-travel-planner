@@ -1,4 +1,5 @@
 ﻿venv/
+.kiro
 __pycache__/
 *.pyc
 .env

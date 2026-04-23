@@ -5,12 +5,8 @@ Implements export button state management with tooltips
 
 from typing import Dict, Any, Optional
 import streamlit as st
-from components.export import export_to_txt, export_to_markdown, export_to_pdf
-from components.export import create_export_filename, is_pdf_available
-from components.sharing import copy_to_clipboard, create_email_share_link
-from components.sharing import generate_shareable_link, show_share_options
-from components.analytics import track_export_event, track_share_event
-from components.feedback import show_feedback_confirmation
+from components.export import export_to_txt, export_to_markdown
+from components.export import create_export_filename
 
 
 def create_export_section(
@@ -42,7 +38,7 @@ def create_export_section(
         return
     
     # Create export buttons
-    col1, col2, col3 = st.columns(3)
+    col1, col2 = st.columns(2)
     
     with col1:
         # TXT Export
@@ -57,46 +53,9 @@ def create_export_section(
             use_container_width=True,
             key="export_txt"
         ):
-            track_export_event(destination, "txt", True)
+            pass
     
     with col2:
-        # PDF Export
-        if is_pdf_available():
-            pdf_content = export_to_pdf(
-                itinerary, destination, days, budget, currency,
-                budget_info, weather_info
-            )
-            pdf_filename = create_export_filename(destination, "pdf")
-            
-            # Convert bytes to base64 for download
-            import base64
-            b64_pdf = base64.b64encode(pdf_content).decode()
-            
-            # Create download link with professional styling
-            href = f'''
-            <a href="data:application/pdf;base64,{b64_pdf}" download="{pdf_filename}" 
-               style="display: inline-block; width: 100%; padding: 0.6rem 1.2rem; 
-                      background: linear-gradient(135deg, #1E3A5F 0%, #008080 100%); 
-                      color: white; text-decoration: none; border-radius: 8px; 
-                      font-weight: 500; text-align: center; transition: all 0.2s ease;
-                      box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                📄 Download PDF
-            </a>
-            '''
-            st.markdown(href, unsafe_allow_html=True)
-            track_export_event(destination, "pdf", True)
-        else:
-            st.markdown("""
-            <div style="background-color: #FEF3C7; border-left: 4px solid #F59E0B; 
-                        padding: 1rem; border-radius: 8px; margin-top: 1rem;">
-                <strong>PDF Export Not Available</strong><br>
-                PDF export requires the ReportLab library for professional document formatting.
-                <br><br>
-                <small>Install with: <code>pip install reportlab</code></small>
-            </div>
-            """, unsafe_allow_html=True)
-    
-    with col3:
         # Markdown Export
         md_content = export_to_markdown(itinerary, destination, days, budget, currency)
         md_filename = create_export_filename(destination, "md")
@@ -109,11 +68,7 @@ def create_export_section(
             use_container_width=True,
             key="export_md"
         ):
-            track_export_event(destination, "md", True)
-    
-    # Add sharing options
-    st.markdown("")
-    show_share_options(itinerary, destination, days, budget, currency)
+            pass
 
 
 def is_export_enabled(itinerary: str, destination: str) -> bool:
@@ -200,7 +155,5 @@ def update_export_button_states(
     
     return {
         "txt_enabled": enabled,
-        "pdf_enabled": enabled and is_pdf_available(),
-        "md_enabled": enabled,
-        "share_enabled": enabled
+        "md_enabled": enabled
     }
