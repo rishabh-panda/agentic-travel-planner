@@ -1,0 +1,46 @@
+llm_model: llama-3.3-70b-versatile
+base_currency: USD
+enable_hidden_cost_detection: true
+enable_price_prediction: true
+enable_quality_checks: true
+cache_duration_hours: 24
+
+api_endpoints:
+  exchange_rate: https://api.exchangerate-api.com/v4/latest
+  destination_costs: https://api.example.com/destination-costs
+
+budget_categories:
+  - accommodation
+  - food
+  - activities
+  - transport
+  - misc
+
+default_allocation:
+  budget:
+    accommodation: 35
+    food: 20
+    activities: 15
+    transport: 20
+    misc: 10
+  mid-range:
+    accommodation: 40
+    food: 25
+    activities: 20
+    transport: 10
+    misc: 5
+  luxury:
+    accommodation: 45
+    food: 25
+    activities: 20
+    transport: 5
+    misc: 5
+
+risk_thresholds:
+  low_risk_multiplier: 1.1
+  medium_risk_multiplier: 1.3
+  high_risk_multiplier: 1.6
+
+currency_conversion:
+  cache_ttl_hours: 6
+  fallback_enabled: true

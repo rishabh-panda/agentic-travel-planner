@@ -1,123 +1,102 @@
-from typing import Dict, Any
-from langchain_groq import ChatGroq
-from langchain_core.messages import SystemMessage, HumanMessage
-import os
-import json
+from typing import List, Dict, Any
 
 
 class SummariserAgent:
-    """Agent responsible for final itinerary summarization."""
-    
-    def __init__(self, temperature: float = 0.2):
-        self.llm = ChatGroq(
-            model="llama-3.3-70b-versatile",
-            temperature=temperature,
-            api_key=os.getenv("GROQ_API_KEY")
+    def create_final_itinerary(self, research: Dict, budget_info: Dict, logistics: Dict) -> str:
+        """Create final itinerary from all agent outputs."""
+        destination = research.get("destination", "Unknown")
+        days = research.get("days", logistics.get("days", 3))
+        weather = research.get("weather", {"forecast": []})
+        daily_plan = logistics.get("itinerary", [])
+        
+        return self.generate_final_itinerary(
+            destination=destination,
+            days=days,
+            budget_info=budget_info,
+            daily_plan=daily_plan,
+            weather=weather,
+            interests=[],
+            logistics=logistics
         )
     
-    def create_final_itinerary(self, research: Dict, budget: Dict, logistics: Dict) -> str:
-        """
-        Create a polished, human-readable itinerary.
+    def generate_final_itinerary(self, destination: str, days: int, budget_info: Dict, 
+                                  daily_plan: List[Dict], weather: Dict, interests: List[str],
+                                  logistics: Dict = None) -> str:
+        """Generate readable itinerary from all agent outputs."""
+        output = []
+        output.append(f"=== TRAVEL ITINERARY FOR {destination.upper()} ===\n")
         
-        Args:
-            research (Dict): Research findings.
-            budget (Dict): Budget breakdown.
-            logistics (Dict): Daily itinerary.
+        output.append("**Weather Forecast:**")
+        forecast_list = weather.get("forecast", [])
+        if forecast_list:
+            for day in forecast_list:
+                date = day.get('date', 'Unknown')
+                condition = day.get('condition', 'Unknown')
+                temp = day.get('temp', 'N/A')
+                output.append(f"{date}: {condition}, {temp}°C")
+        else:
+            output.append("Weather data not available")
+        output.append("")
         
-        Returns:
-            str: Formatted itinerary text.
-        """
-        try:
-            system_prompt = SystemMessage(
-                content="You are a professional travel consultant. Create beautiful, detailed, location-specific itineraries."
-            )
+        for day_idx, plan in enumerate(daily_plan, 1):
+            theme = plan.get('theme', f'Day {day_idx}')
+            output.append(f"**Day {day_idx}:** {theme}")
             
-            destination = research.get("destination", "your destination")
-            weather = research.get("weather", {}).get("forecast", [])
-            weather_text = self._format_weather(weather)
+            activities = plan.get("activities", [])
+            if activities:
+                for activity in activities:
+                    time = activity.get('time', '')
+                    name = activity.get('name', '')
+                    description = activity.get('description', '')
+                    if name and description:
+                        output.append(f"- {time}: {name} - {description}")
+                    elif name:
+                        output.append(f"- {time}: {name}")
+            else:
+                if plan.get('morning_activity'):
+                    output.append(f"- Morning: {plan.get('morning_activity')}")
+                if plan.get('afternoon_activity'):
+                    output.append(f"- Afternoon: {plan.get('afternoon_activity')}")
+                if plan.get('evening_activity'):
+                    output.append(f"- Evening: {plan.get('evening_activity')}")
             
-            human_prompt = HumanMessage(
-                content=f"""
-                Create a final travel itinerary for {destination} using this data:
-                
-                RESEARCH: {json.dumps(research, indent=2)}
-                BUDGET: {json.dumps(budget, indent=2)}
-                LOGISTICS: {json.dumps(logistics, indent=2)}
-                
-                Format requirements:
-                1. Start with "=== TRAVEL ITINERARY FOR {destination.upper()} ==="
-                2. Include weather forecast section: {weather_text}
-                3. For each day, show specific activities with attraction names
-                4. Include budget breakdown with daily costs
-                5. Add location-specific tips
-                6. End with "Enjoy your trip to {destination}!"
-                
-                Make it detailed, specific to {destination}, and actionable.
-                """
-            )
-            
-            response = self.llm.invoke([system_prompt, human_prompt])
-            
-            return response.content.strip()
+            meals = plan.get('meal_suggestions', plan.get('meals_suggestion', 'Local cuisine'))
+            output.append(f"- Meals: {meals}")
+            output.append("")
         
-        except Exception as e:
-            print(f"Summary generation error: {e}")
-            return self._get_fallback_summary(research, budget, logistics)
-    
-    def _format_weather(self, weather_forecast: list) -> str:
-        """Format weather forecast for prompt."""
-        if not weather_forecast:
-            return "Weather information not available"
+        output.append("**Budget Breakdown:**")
+        output.append(f"- Total Budget: {budget_info.get('currency', 'USD')} {budget_info.get('total_budget', 0)}")
+        output.append(f"- Daily Budget: {budget_info.get('currency', 'USD')} {budget_info.get('daily_budget', 0)}")
+        output.append("- Breakdown:")
         
-        days = []
-        for day in weather_forecast[:3]:
-            days.append(f"{day.get('date', 'Unknown')}: {day.get('condition', 'Unknown')}, {day.get('max_temp', '?')}°C")
+        breakdown = budget_info.get("breakdown", {})
+        for cat, amt in breakdown.items():
+            output.append(f"  - {cat.capitalize()}: {budget_info.get('currency', 'USD')} {amt}")
         
-        return " | ".join(days)
-    
-    def _get_fallback_summary(self, research: Dict, budget: Dict, logistics: Dict) -> str:
-        """Provide contextual fallback summary."""
-        destination = research.get("destination", "your destination")
-        days = logistics.get("days", 3)
-        currency = budget.get("currency", "USD")
+        quality = budget_info.get("quality_warning", {})
+        risk_level = quality.get("risk_level", "")
+        message = quality.get("message", "")
+        suggested_action = quality.get("suggested_action", "")
         
-        summary = f"""
-=== TRAVEL ITINERARY FOR {destination.upper()} ===
-
-WEATHER FORECAST:
-{research.get('weather', {}).get('forecast', [{}])[0].get('condition', 'Pleasant')} conditions expected during your stay.
-
-DAILY ITINERARY:
-"""
+        if risk_level in ["high", "critical", "medium"] and message:
+            output.append(f"\n**Budget Quality Alert:** {message}")
+            if suggested_action:
+                output.append(f"**Recommendation:** {suggested_action}")
         
-        itinerary = logistics.get("itinerary", [])
-        for day in itinerary:
-            summary += f"""
-Day {day.get('day_number', '?')}: {day.get('theme', 'Exploration')}
-  Morning: {day.get('morning_activity', 'Sightseeing')}
-  Afternoon: {day.get('afternoon_activity', 'Local experiences')}
-  Evening: {day.get('evening_activity', 'Dinner')}
-  Meal Suggestion: {day.get('meals_suggestion', 'Local cuisine')}
-"""
+        hidden = budget_info.get("hidden_costs", [])
+        if hidden:
+            output.append("\n**Potential Hidden Costs to Avoid:**")
+            for h in hidden[:3]:
+                output.append(f"- {h.get('category', 'Unknown')}: {h.get('avoidance_tip', '')}")
         
-        breakdown = budget.get("breakdown", {})
-        summary += f"""
-BUDGET BREAKDOWN ({currency}):
-  Daily Budget: {budget.get('daily_budget', 'N/A')}
-  Accommodation: {breakdown.get('accommodation', 'N/A')}
-  Food: {breakdown.get('food', 'N/A')}
-  Activities: {breakdown.get('activities', 'N/A')}
-  Transport: {breakdown.get('transport', 'N/A')}
-  Miscellaneous: {breakdown.get('misc', 'N/A')}
-
-LOCATION-SPECIFIC TIPS:
-- Research local transportation options in {destination}
-- Learn a few basic local phrases
-- Check peak hours for popular attractions
-- Carry local currency for small purchases
-- Book popular restaurants in advance
-
-Enjoy your trip to {destination}!
-"""
+        recs = budget_info.get("recommendations", [])
+        if recs:
+            output.append("\n**Recommendations:**")
+            for r in recs[:3]:
+                output.append(f"- {r}")
         
-        return summary
+        if logistics and logistics.get("warning"):
+            output.append(f"\n**Note:** {logistics.get('warning')}")
+        
+        output.append(f"\nEnjoy your trip to {destination}!")
+        return "\n".join(output)

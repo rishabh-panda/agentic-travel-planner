@@ -46,7 +46,7 @@ class Orchestrator:
             attractions = research.get("attractions", [])
             logistics = self.logistics_agent.plan_itinerary(attractions, days, destination, interests)
             
-            # Step 4: Final Summary
+            # Step 4: Final Summary - using correct method name and signature
             print("Summariser Agent: Generating final itinerary...")
             final_itinerary = self.summariser_agent.create_final_itinerary(
                 research, budget_plan, logistics
@@ -64,6 +64,8 @@ class Orchestrator:
         
         except Exception as e:
             print(f"Orchestration error: {e}")
+            import traceback
+            traceback.print_exc()
             return {
                 "success": False,
                 "error": str(e),

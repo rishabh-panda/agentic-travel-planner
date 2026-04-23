@@ -1,0 +1,27 @@
+{
+  "default": {
+    "budget": {"daily_min": 30, "daily_avg": 50, "daily_max": 70},
+    "mid-range": {"daily_min": 70, "daily_avg": 100, "daily_max": 150},
+    "luxury": {"daily_min": 150, "daily_avg": 250, "daily_max": 400}
+  },
+  "india": {
+    "budget": {"daily_min": 20, "daily_avg": 35, "daily_max": 50},
+    "mid-range": {"daily_min": 50, "daily_avg": 80, "daily_max": 120},
+    "luxury": {"daily_min": 120, "daily_avg": 200, "daily_max": 350}
+  },
+  "thailand": {
+    "budget": {"daily_min": 25, "daily_avg": 45, "daily_max": 65},
+    "mid-range": {"daily_min": 65, "daily_avg": 100, "daily_max": 150},
+    "luxury": {"daily_min": 150, "daily_avg": 250, "daily_max": 400}
+  },
+  "france": {
+    "budget": {"daily_min": 70, "daily_avg": 100, "daily_max": 130},
+    "mid-range": {"daily_min": 130, "daily_avg": 200, "daily_max": 300},
+    "luxury": {"daily_min": 300, "daily_avg": 500, "daily_max": 800}
+  },
+  "japan": {
+    "budget": {"daily_min": 60, "daily_avg": 90, "daily_max": 120},
+    "mid-range": {"daily_min": 120, "daily_avg": 180, "daily_max": 250},
+    "luxury": {"daily_min": 250, "daily_avg": 400, "daily_max": 600}
+  }
+}
