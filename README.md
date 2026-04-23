@@ -17,7 +17,7 @@
 
 ---
 
-## 🚀 Overview
+## Overview
 
 The Agentic Travel Itinerary Planner is an enterprise-grade travel planning system that leverages multiple AI agents to generate personalized, comprehensive travel itineraries. Built on Groq's high-performance LLM API, the system delivers weather forecasts, budget breakdowns, and day-by-day activity plans in seconds.
 
@@ -34,9 +34,9 @@ Simply enter your destination, budget, and interests. Get back:
 
 ---
 
-## ✨ Features
+## Features
 
-### 🎯 Interest-Based Personalization
+### Interest-Based Personalization
 
 The system curates activities based on your specific interests:
 
@@ -48,7 +48,7 @@ The system curates activities based on your specific interests:
 | Shopping | shopping, handicrafts, local markets |
 | Photography | photography |
 
-### 💰 Smart Budget Planning
+### Smart Budget Planning
 
 - **Multi-currency support**: INR, USD, EUR, GBP, JPY, CAD, AUD, SGD, CNY
 - **5-category allocation** with intelligent percentages
@@ -56,7 +56,7 @@ The system curates activities based on your specific interests:
 - **Hidden cost detection** for common travel expenses
 - **Budget recommendations** when funds are limited
 
-### 🤖 Multi-Agent Architecture
+### Multi-Agent Architecture
 
 | Agent | Responsibility | LLM Model |
 |-------|---------------|-----------|
@@ -67,7 +67,7 @@ The system curates activities based on your specific interests:
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -101,7 +101,7 @@ The system curates activities based on your specific interests:
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
@@ -117,7 +117,7 @@ The system curates activities based on your specific interests:
 
 ---
 
-## 📦 Installation
+## Installation
 
 ### Prerequisites
 
@@ -151,7 +151,7 @@ cp .env.example .env
 
 ---
 
-## ⚙️ Configuration
+## Configuration
 
 ### Environment Variables
 
@@ -176,7 +176,7 @@ Edit `config/budget_config.yaml` to customize:
 
 ---
 
-## 🚀 Usage
+## Usage
 
 ### Starting the Application
 
@@ -205,7 +205,7 @@ The application will open in your browser at `http://localhost:8501`.
 
 ---
 
-## 🧪 Testing
+## Testing
 
 Run the test suite:
 
@@ -224,7 +224,7 @@ Test coverage includes:
 
 ---
 
-## 📊 Sample Output
+## Sample Output
 
 ```
 Destination: Tokyo
@@ -252,7 +252,7 @@ Output includes:
 
 ---
 
-## 🎨 UI Features
+## UI Features
 
 - **Responsive Design**: Works on desktop, tablet, and mobile
 - **Accessibility**: WCAG-compliant with keyboard navigation
@@ -263,7 +263,7 @@ Output includes:
 
 ---
 
-## 🔒 Security
+## Security
 
 - API keys stored in environment variables (never committed)
 - Input validation on all user inputs
@@ -272,7 +272,7 @@ Output includes:
 
 ---
 
-## 📈 Performance
+## Performance
 
 - **Generation Time**: 15-30 seconds (depending on destination complexity)
 - **Cache Duration**: 24 hours
@@ -281,7 +281,7 @@ Output includes:
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please follow these steps:
 
@@ -293,13 +293,13 @@ Contributions are welcome! Please follow these steps:
 
 ---
 
-## 📝 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - Groq for providing fast LLM inference
 - Streamlit team for the excellent UI framework
@@ -309,7 +309,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 <div align="center">
 
-**Built with ❤️ using Python**
+**Powered by Groq Llama 3.3 70B**
 
 [Report Bug](https://github.com/rishabh-panda/agentic-travel-planner/issues) • [Request Feature](https://github.com/rishabh-panda/agentic-travel-planner/issues) • [Showcase](https://github.com/rishabh-panda/agentic-travel-planner/discussions)
 
