@@ -54,7 +54,7 @@ Tell us what you love. The system builds activities around your specific interes
 ## Installation
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/rishabh-panda/agentic-travel-planner
 cd agentic-travel-planner
 py -3.10 -m venv venv
 venv\Scripts\activate
